@@ -10,9 +10,9 @@ def create_rectangle(center_point, width_radius, height_radius, color):
 def get_corners(rect):
     return [rect.p1, Point(rect.p1.x, rect.p2.y), rect.p2, Point(rect.p2.x, rect.p1.y)]
 
-def get_corners_from_many(rects):
+def get_corners_from_many(rectangles):
     corners = []
-    for rect in rects:
+    for rect in rectangles:
         corners.extend(get_corners(rect))
     return corners
 
