@@ -1,0 +1,18 @@
+Class:
+    - Encapsulates a concept into a re-usable component.
+    - E.g. the Circle class encapsulates the concept of a circle, which can be defined as a point with radius.
+Object:
+    - An instance of a class.
+    - E.g. I can have 2 point objects, say Point(2, 3) and Point(-1, 5). These are two different objects, i.e. 2 different instances of the same class.
+Loop:
+    - Use for repeating some behavior.
+    - Two types of loops: the while-loop and the for-loop
+Function:
+    - Like a mini program. A function encapsulates behavior.
+    - When we use a function, we say that we invoke/call/run the function.
+    - A function can input and output.
+        - The input to function is generally called the "parameters", or "arguments", of a function
+        - The output of a function is generally called the "return value" of the function.
+
+Questions?
+Email me at luke.bonde@s-sm.org
