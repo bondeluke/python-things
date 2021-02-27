@@ -1,27 +1,28 @@
-from math import tau
-from setup import *
-from graphics import *
+from create_rectangle import create_rectangle, get_corners, get_corners_from_many
+from graphics import Rectangle, Point, color_rgb
+from setup import draw_axes, win
 
 draw_axes()
 
-def draw_wheel(position, number_of_spokes, radius, color):
-    # Draw the circle and the initial line
-    c = Circle(position, radius)
-    c.setWidth(3)
-    c.setOutline(color)
-    c.draw(win)
+w_modifier = 1/2
+h_modifier = 1/2
+r_modifier = 2
+g_modifier = 3/2
+b_modifier = 4/3
 
-    line = Line(position, Point(position.x + radius, position.y))
+def rectangles_from(points, w_r, h_r, r, g, b):
+    results = []
+    for point in points:
+        rect = create_rectangle(point, w_r , h_r, color_rgb(r, g, b))
+        results.append(rect)
+    return results
 
-    for n in range(0, number_of_spokes):
-        rl = rotate(line, n * tau / number_of_spokes)
-        rl.setFill(color)
-        rl.draw(win)
+def recurse(n, seed, w, h, m, c_v, c_m):
+    result = rectangles_from(seed, w, h, c_v[0] % 256, c_v[1] % 256, c_v[2] % 256)
+    if n == 1: return result
+    return recurse(n - 1, get_corners_from_many(result), w * m, h * m, m, [c_v[0] + c_m[0], c_v[1] + c_m[1], c_v[2] + c_m[2]], c_m) + result
 
-draw_wheel(Point(0, 0), 12, 7, color_rgb(128, 0, 0))
-draw_wheel(Point(-16, 8), 25, 8, color_rgb(0, 128, 0))
-draw_wheel(Point(18, -5), 15, 9, color_rgb(0, 0, 128))
-draw_wheel(Point(-16, -8), 27, 5, color_rgb(128, 64, 0))
-draw_wheel(Point(18, 13), 8, 3, color_rgb(0, 64, 128))
+for rectangle in recurse(6, [Point(0, 0)], 10, 8, 1/2, [28, 123, 128], [16, 4, 2]):
+    rectangle.draw(win)
 
 win.getMouse()
