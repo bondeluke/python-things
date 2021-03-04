@@ -1,4 +1,4 @@
-from graphics import Rectangle, Point
+from src.graphics import Rectangle, Point
 
 def create_rectangle(center_point, width_radius, height_radius, color):
     bottom_left = Point(center_point.x - width_radius, center_point.y - height_radius)
