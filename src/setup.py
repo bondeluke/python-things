@@ -3,7 +3,7 @@ from graphics import Line, Point, GraphWin, color_rgb
 ## Window has a 16:9 aspect ratio
 _xScale = 16 # The horizontal value of the aspect ratio.
 _yScale = 9  # The vertical value of the aspect ratio.
-_gridScalar = 1   # The scale of the grid: Adjust as needed
+_gridScalar = 5   # The scale of the grid: Adjust as needed
 _windowScalar = 7 # The scale of the window: Adjust as needed
 
 left = _gridScalar * -_xScale
