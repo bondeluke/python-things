@@ -42,3 +42,4 @@ def distance_vector(line, point):
 
     m = (a * a + b * b - c * c) / (2 * a)
     return Line(point, angled_line(line.p1, m, angle_of(line)).p2)
+
