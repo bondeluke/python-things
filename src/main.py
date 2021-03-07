@@ -9,7 +9,7 @@ def rotation(fraction):
 
 tile_radius = 4
 layer_step = tile_radius * sqrt(3)
-layer_padding = layer_step / 10
+layer_padding = layer_step / 3
 
 draw_axes()
 radial_unit = 12
@@ -93,16 +93,105 @@ def root(x):
     if x == 0: return 0
     return (3 + sqrt(12 * x - 3)) / 6
 
-for t in all_tiles:
-    x = t.index
-    n = int(root(t.index))
-    remainder = t.index - h(n)
+order = ["f", "d", "l", "b", "u", "r"]
+
+def long_path_to(index):
+    n = int(root(index))
+    remainder = index - h(n)
+    base = repeat("u", n)
     if remainder == 0:
-        t.label = "h({})".format(n)
-    else:
-        t.label = "h({}) + {}".format(n, remainder)
-    t.color = cf(n, layers)
-    t.get_tile().draw(window)
-    t.get_label().draw(window)
+        return base
+    rest = ""
+    count = 0
+    for c in order:
+        for i in range(n):
+            rest += c
+            count += 1
+            if count == remainder:
+                return base + rest
+
+def repeat(string, how_many_times):
+    result = ""
+    for i in range(how_many_times):
+        result += string
+    return result
+
+class Equivalence:
+    def __init__(self, long, short):
+        self.long = long
+        self.short = short
+
+equivalences = [
+    # 2 -> 0
+    Equivalence("ud", ""),
+    Equivalence("rl", ""),
+    Equivalence("fb", ""),
+
+    # 2 -> 1
+    Equivalence("uf", "r"),
+    Equivalence("ul", "b"),
+    Equivalence("db", "l"),
+    Equivalence("dr", "f"),
+
+    Equivalence("rd", "f"),
+    Equivalence("rb", "u"),
+    Equivalence("lu", "b"),
+    Equivalence("lf", "d"),
+
+    Equivalence("br", "u"),
+    Equivalence("bd", "l"),
+    Equivalence("fl", "d"),
+    Equivalence("fu", "r"),
+    #
+    # # 3 -> 2
+    # Equivalence("fru", "rr"),
+    # Equivalence("urf", "rr"),
+    #
+    # Equivalence("dlb", "ll"),
+    # Equivalence("bld", "ll"),
+    #
+    # Equivalence("rub", "uu"),
+    # Equivalence("bur", "uu"),
+    #
+    # Equivalence("fdl", "dd"),
+    # Equivalence("ldf", "dd"),
+    #
+    # Equivalence("dfr", "ff"),
+    # Equivalence("rfd", "ff"),
+    #
+    # Equivalence("lbu", "bb"),
+    # Equivalence("ubl", "bb")
+]
+
+def split(word):
+    return [str(char) for char in word]
+
+def reduce(path_string: str):
+    for e in equivalences:
+        eqs = split(e.long)
+        e1 = eqs[0]
+        e2 = eqs[1]
+        if e1 in path_string and e2 in path_string:
+            p1 = path_string.replace(e1, "", 1)
+            p1 = p1.replace(e2, "", 1)
+            p1 = p1 + e.short
+            indexes = [path_string.find(e1), path_string.find(e2)]
+            indexes.sort()
+            result = path_string[:indexes[0]] + path_string[indexes[0] + 1:indexes[1]] + path_string[indexes[1] + 1:] + e.short
+            # print(path_string, e1, e2, result)
+            return reduce(result)
+
+    return path_string
+
+def draw():
+    for t in all_tiles:
+        n = int(root(t.index))
+        long_path = long_path_to(t.index)
+        t.label = "{}".format(reduce(long_path).upper())
+        t.color = cf(n, layers)
+        t.get_tile().draw(window)
+        t.get_label().draw(window)
+
+draw()
 
 window.getMouse()
