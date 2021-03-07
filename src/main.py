@@ -94,7 +94,7 @@ def root(x):
     if x == 0: return 0
     return (3 + sqrt(12 * x - 3)) / 6
 
-order = ["f", "d", "l", "b", "u", "r"]
+rotation_order = ["f", "d", "l", "b", "u", "r"]
 
 def long_path_to(index):
     n = int(root(index))
@@ -104,7 +104,7 @@ def long_path_to(index):
         return base
     rest = ""
     count = 0
-    for c in order:
+    for c in rotation_order:
         for i in range(n):
             rest += c
             count += 1
@@ -183,7 +183,7 @@ def get_line(path_index_1, path_index_2):
     tile12 = get_tile_by_path(path_index_2)
     return Line(tile1.center, tile12.center)
 
-def get_path(start_index: str, path_index: str):
+def get_path_between(start_index: str, path_index: str):
     steps = []
     diff = reduce(inverse(start_index) + path_index)
     for d in range(len(diff)):
@@ -206,7 +206,26 @@ def inverse(path_str: str):
         if c == 'f':
             inv += 'b'
 
-    return reduce(inv)
+    return inv
+
+def rotate(path_str: str, count=1):
+    if count == 0: return path_str
+    rot = ""
+    for c in path_str:
+        if c == 'u':
+            rot += 'r'
+        if c == 'r':
+            rot += 'f'
+        if c == 'f':
+            rot += 'd'
+        if c == 'd':
+            rot += 'l'
+        if c == 'l':
+            rot += 'b'
+        if c == 'b':
+            rot += 'u'
+
+    return rotate(rot, count - 1)
 
 def draw():
     lines = []
@@ -214,22 +233,30 @@ def draw():
     for t in all_tiles:
         n = int(root(t.index))
         long_path = long_path_to(t.index)
-        shortest_path = reduce(long_path)
-        t.path_index = shortest_path
-        t.label = "{}\n{}".format(t.index, shortest_path.upper())
+        t.path_index = reduce(long_path)
+        t.label = "{}\n{}".format(t.index, t.path_index.upper())
         t.color = cf(n, layers)
-        lines.extend(get_path("", shortest_path))
+        lines.extend(get_path_between("", t.path_index))
 
-    for l in lines:
-        l.setWidth(3)
-        l.setFill(color_rgb(128, 128, 128))
-        l.draw(window)
+    for line in lines:
+        line.setFill(color_rgb(100, 100, 100))
+        line.setWidth(3)
+        line.draw(window)
 
-    path = get_path("ur", "ffr")
-    for p in path:
-        p.setFill("red")
-        p.setWidth(5)
-        p.draw(window)
+    path_seeds = ["ururu", "ububu", "uuur", "uuub"]
+    paths = []
+
+    for path_seed in path_seeds:
+        for rotations in range(3):
+            rotated_path = rotate(path_seed, rotations * 2)
+            for target in range(0, len(rotated_path)):
+                p = get_line(reduce(rotated_path[:target]), reduce(rotated_path[:target + 1]))
+                p.setFill(color_rgb(100, 0, 50))
+                p.setWidth(9)
+                paths.append(p)
+
+    for path in paths:
+        path.draw(window)
 
     for t in all_tiles:
         t.get_tile().draw(window)
