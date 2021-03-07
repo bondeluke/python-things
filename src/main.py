@@ -1,38 +1,41 @@
-from math import tau, sqrt, sin, cos
+from math import tau, sqrt, sin, cos, floor
 
 from setup import window, draw_axes
-from src.graphics import Point, color_rgb, Polygon
+from src.graphics import Point, color_rgb, Polygon, GraphicsObject, GraphWin, Text
 from src.tools.points_around import points_around
 
 def rotation(fraction):
     return fraction * tau
 
-layer_step = 2 * sqrt(3)
+tile_radius = 4
+layer_step = tile_radius * sqrt(3)
+layer_padding = layer_step / 10
 
 draw_axes()
-unit = 12
-tick_angle = tau / unit
-step_angle = tau * 2 / unit
+radial_unit = 12
+tick_angle = tau / radial_unit
+step_angle = tau * 2 / radial_unit
 
-def tile(point: Point, color, ta):
-    polygon = Polygon(points_around(6, point, 2, ta))
+class HexNode:
+    def __init__(self, center, color, index, label=""):
+        self.center = center
+        self.color = color
+        self.index = index
+        self.label = label
+
+    def get_tile(self):
+        return hex_tile(self.center, self.color)
+
+    def get_label(self):
+        return Text(self.center, self.label)
+
+def hex_tile(point: Point, color):
+    polygon = Polygon(points_around(6, point, tile_radius))
     polygon.setWidth(3)
     polygon.setFill(color)
     return polygon
 
 origin = Point(0, 0)
-
-def tile_layer2(layer_index: int, color, distance, offset: float):
-    if layer_index == 0:
-        o_tile = tile(origin, color, tick_angle)
-        return [o_tile]
-
-    tiles = []
-
-    for point in points_around(6, origin, distance, offset):
-        tiles.append(tile(point, color, tick_angle))
-
-    return tiles
 
 def points_in_between(p1, p2, how_many):
     points = []
@@ -45,23 +48,30 @@ def points_in_between(p1, p2, how_many):
 
     return points
 
+def h(n):
+    if n == 0: return 0
+    return 3 * n * (n - 1) + 1
+
 def tile_layer(index: int, color):
     if index == 0:
-        return [tile(origin, color, tick_angle)]
+        return [HexNode(origin, color, 0)]
 
-    distance = layer_step * index
-    pa = points_around(6, origin, distance)
+    distance = (layer_step + layer_padding) * index
+    pa = points_around(6, origin, distance, tick_angle + step_angle)
 
     tiles = []
 
-    for point in pa:
-        tiles.append(tile(point, color, tick_angle))
+    hn_prev = h(index)
+    c = 0
 
     for point_index in range(6):
         current_point = pa[point_index]
         next_point = pa[(point_index + 1) % 6]
+        tiles.append(HexNode(current_point, color, hn_prev + c))
+        c += 1
         for p in points_in_between(current_point, next_point, index - 1):
-            tiles.append(tile(p, color, tick_angle))
+            tiles.append(HexNode(p, color, hn_prev + c))
+            c += 1
 
     return tiles
 
@@ -69,17 +79,30 @@ def cf(numerator, denominator):
     r_o = 0 * denominator / 3
     g_o = 1 * denominator / 3
     b_o = 2 * denominator / 3
-    r = int((sin((numerator + r_o) * tau / denominator) + 1) / 2  * 255)
-    g = int((sin((numerator + g_o) * tau / denominator) + 1) / 2  * 255)
-    b = int((sin((numerator + b_o) * tau / denominator) + 1) / 2  * 255)
+    r = int((sin((numerator + r_o) * tau / denominator) + 1) / 2 * 255)
+    g = int((sin((numerator + g_o) * tau / denominator) + 1) / 2 * 255)
+    b = int((sin((numerator + b_o) * tau / denominator) + 1) / 2 * 255)
     return color_rgb(r, g, b)
 
-layers = 12
+layers = 6
 all_tiles = []
 for layer_index in range(layers):
     all_tiles.extend(tile_layer(layer_index, cf(layer_index, layers)))
 
+def root(x):
+    if x == 0: return 0
+    return (3 + sqrt(12 * x - 3)) / 6
+
 for t in all_tiles:
-    t.draw(window)
+    x = t.index
+    n = int(root(t.index))
+    remainder = t.index - h(n)
+    if remainder == 0:
+        t.label = "h({})".format(n)
+    else:
+        t.label = "h({}) + {}".format(n, remainder)
+    t.color = cf(n, layers)
+    t.get_tile().draw(window)
+    t.get_label().draw(window)
 
 window.getMouse()
