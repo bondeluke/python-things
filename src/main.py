@@ -1,7 +1,7 @@
 from math import tau, sqrt, sin, cos, floor
 
 from setup import window, draw_axes
-from src.graphics import Point, color_rgb, Polygon, GraphicsObject, GraphWin, Text
+from src.graphics import Point, color_rgb, Polygon, GraphicsObject, GraphWin, Text, Line
 from src.tools.points_around import points_around
 
 def rotation(fraction):
@@ -17,11 +17,12 @@ tick_angle = tau / radial_unit
 step_angle = tau * 2 / radial_unit
 
 class HexNode:
-    def __init__(self, center, color, index, label=""):
+    def __init__(self, center, color, index, label="", path_index=""):
         self.center = center
         self.color = color
         self.index = index
         self.label = label
+        self.path_index = path_index
 
     def get_tile(self):
         return hex_tile(self.center, self.color)
@@ -121,74 +122,116 @@ class Equivalence:
         self.long = long
         self.short = short
 
+    def get_eqs(self):
+        return self.long[0:1], self.long[1:2]
+
+sort_order = ["u", "f", "l", "d", "b", "r"]
+
 equivalences = [
     # 2 -> 0
     Equivalence("ud", ""),
-    Equivalence("rl", ""),
     Equivalence("fb", ""),
+    Equivalence("lr", ""),
 
     # 2 -> 1
     Equivalence("uf", "r"),
     Equivalence("ul", "b"),
     Equivalence("db", "l"),
     Equivalence("dr", "f"),
-
-    Equivalence("rd", "f"),
-    Equivalence("rb", "u"),
-    Equivalence("lu", "b"),
-    Equivalence("lf", "d"),
-
     Equivalence("br", "u"),
-    Equivalence("bd", "l"),
     Equivalence("fl", "d"),
-    Equivalence("fu", "r"),
-    #
-    # # 3 -> 2
-    # Equivalence("fru", "rr"),
-    # Equivalence("urf", "rr"),
-    #
-    # Equivalence("dlb", "ll"),
-    # Equivalence("bld", "ll"),
-    #
-    # Equivalence("rub", "uu"),
-    # Equivalence("bur", "uu"),
-    #
-    # Equivalence("fdl", "dd"),
-    # Equivalence("ldf", "dd"),
-    #
-    # Equivalence("dfr", "ff"),
-    # Equivalence("rfd", "ff"),
-    #
-    # Equivalence("lbu", "bb"),
-    # Equivalence("ubl", "bb")
+
+    # Equivalence("rd", "f"),
+    # Equivalence("rb", "u"),
+    # Equivalence("lu", "b"),
+    # Equivalence("lf", "d"),
+    # Equivalence("bd", "l"),
+    # Equivalence("fu", "r")
 ]
 
 def split(word):
     return [str(char) for char in word]
 
+def key(word):
+    return sort_order.index(word)
+
+def join(words):
+    r = ""
+    for w in words:
+        r += w
+
+    return r
+
 def reduce(path_string: str):
+    cs = split(path_string)
+    cs.sort(key=key)
+    path_string = join(cs)
     for e in equivalences:
-        eqs = split(e.long)
-        e1 = eqs[0]
-        e2 = eqs[1]
+        e1, e2 = e.get_eqs()
         if e1 in path_string and e2 in path_string:
-            p1 = path_string.replace(e1, "", 1)
-            p1 = p1.replace(e2, "", 1)
-            p1 = p1 + e.short
-            indexes = [path_string.find(e1), path_string.find(e2)]
-            indexes.sort()
-            result = path_string[:indexes[0]] + path_string[indexes[0] + 1:indexes[1]] + path_string[indexes[1] + 1:] + e.short
-            # print(path_string, e1, e2, result)
-            return reduce(result)
+            return reduce(path_string.replace(e1, "", 1).replace(e2, "", 1) + e.short)
 
     return path_string
 
+def get_tile_by_path(path):
+    for tile in all_tiles:
+        if tile.path_index == path:
+            return tile
+
+def get_line(path_index_1, path_index_2):
+    tile1 = get_tile_by_path(path_index_1)
+    tile12 = get_tile_by_path(path_index_2)
+    return Line(tile1.center, tile12.center)
+
+def get_path(start_index: str, path_index: str):
+    steps = []
+    diff = reduce(inverse(start_index) + path_index)
+    for d in range(len(diff)):
+        steps.append(get_line(reduce(start_index + diff[:d]), reduce(start_index + diff[:d + 1])))
+    return steps
+
+def inverse(path_str: str):
+    inv = ""
+    for c in path_str:
+        if c == 'u':
+            inv += 'd'
+        if c == 'd':
+            inv += 'u'
+        if c == 'l':
+            inv += 'r'
+        if c == 'r':
+            inv += 'l'
+        if c == 'b':
+            inv += 'f'
+        if c == 'f':
+            inv += 'b'
+
+    return reduce(inv)
+
 def draw():
+    lines = []
+
     for t in all_tiles:
         n = int(root(t.index))
         long_path = long_path_to(t.index)
-        t.label = "{}".format(reduce(long_path).upper())
+        shortest_path = reduce(long_path)
+        t.path_index = shortest_path
+        t.label = "{}\n{}".format(t.index, shortest_path.upper())
         t.color = cf(n, layers)
+        lines.extend(get_path("", shortest_path))
+
+    for l in lines:
+        l.setWidth(3)
+        l.setFill(color_rgb(128, 128, 128))
+        l.draw(window)
+
+    path = get_path("ur", "ffr")
+    for p in path:
+        p.setFill("red")
+        p.setWidth(5)
+        p.draw(window)
+
+    for t in all_tiles:
         t.get_tile().draw(window)
         t.get_label().draw(window)
 
