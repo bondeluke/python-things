@@ -7,6 +7,7 @@ class Node:
         self.color = color
         self.index = index
         self.path_index = path_index
+        self.visited = False
 
     def get_tile(self, how_many_points, tile_radius: float):
         polygon = Polygon(points_around(how_many_points, self.center, tile_radius))
