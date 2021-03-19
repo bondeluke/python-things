@@ -1,17 +1,21 @@
 from math import sin, tau, sqrt
 from src.Node import Node
+from src.colors import color_function
 from src.graphics import Point, color_rgb, Line
 from src.math.hexagonal_numbers import hexagonal_inverse, hexagonal
 from src.string_tools import split, join, repeat
 from src.tools.points_around import points_around
 from src.tools.points_in_between import points_in_between
 
-def tile_layer(layer_index: int, color):
+def tile_layer(origin, layer_index: int, color, rots, inverse):
     if layer_index == 0:
         return [Node(origin, color, 0)]
 
     distance = (layer_step + layer_padding) * layer_index
-    pa = points_around(6, origin, distance, tick_angle + step_angle)
+    pa = points_around(6, origin, distance, tick_angle + step_angle + (rots * step_angle))
+
+    if inverse:
+        pa.reverse()
 
     tiles = []
 
@@ -29,26 +33,15 @@ def tile_layer(layer_index: int, color):
 
     return tiles
 
-def cf(numerator, denominator):
-    r_o = 0 * denominator / 3
-    g_o = 1 * denominator / 3
-    b_o = 2 * denominator / 3
-    r = int((sin((numerator + r_o) * tau / denominator) + 1) / 2 * 255)
-    g = int((sin((numerator + g_o) * tau / denominator) + 1) / 2 * 255)
-    b = int((sin((numerator + b_o) * tau / denominator) + 1) / 2 * 255)
-    return color_rgb(r, g, b)
-
-origin = Point(0, 0)
-
-tile_radius = 5
+tile_radius = 6
 layer_step = tile_radius * sqrt(3)
-layer_padding = 0
+layer_padding = layer_step / 3
 
 radial_unit = 12
 tick_angle = tau / radial_unit
 step_angle = tau * 2 / radial_unit
 
-sort_order = ["0", "1", "2", "3", "4", "5"]
+sort_order = ["0", "2", "4", "3", "1", "5"]
 rotation_order = ["2", "3", "4", "5", "0", "1"]
 
 def long_path_to(index):
@@ -81,12 +74,12 @@ equivalences = [
     Equivalence("41", ""),
 
     # 2 -> 1
+    Equivalence("15", "0"),
     Equivalence("02", "1"),
-    Equivalence("04", "5"),
-    Equivalence("35", "4"),
-    Equivalence("31", "2"),
-    Equivalence("51", "0"),
+    Equivalence("13", "2"),
     Equivalence("24", "3"),
+    Equivalence("35", "4"),
+    Equivalence("04", "5"),
 ]
 
 def key(word):
@@ -109,7 +102,7 @@ def get_tile_by_path(path, all_tiles):
             tile.visited = True
             return tile
 
-def get_line(path_index_1, path_index_2, all_tiles, color = "nothing"):
+def get_line(path_index_1, path_index_2, all_tiles, color="nothing"):
     tile1 = get_tile_by_path(path_index_1, all_tiles)
     tile12 = get_tile_by_path(path_index_2, all_tiles)
     if color != "nothing":
@@ -119,53 +112,22 @@ def get_line(path_index_1, path_index_2, all_tiles, color = "nothing"):
 
 def get_path_between(start_index: str, path_index: str, all_tiles):
     steps = []
-    diff = reduce(inverse(start_index) + path_index)
+    diff = reduce(rotate(start_index, 3) + path_index)
     for d in range(len(diff)):
         steps.append(get_line(reduce(start_index + diff[:d]), reduce(start_index + diff[:d + 1]), all_tiles))
     return steps
 
-def inverse(path_str: str):
-    inv = ""
+def rotate(path_str: str, rotations: int = 1):
+    if rotations == 0: return path_str
+    result = ""
     for c in path_str:
-        if c == '0':
-            inv += '3'
-        if c == '3':
-            inv += '0'
-        if c == '4':
-            inv += '1'
-        if c == '1':
-            inv += '4'
-        if c == '5':
-            inv += '2'
-        if c == '2':
-            inv += '5'
+        result += str((int(c) + rotations) % 6)
+    return result
 
-    return inv
-
-def rotate(path_str: str, count=1):
-    if count == 0: return path_str
-    rot = ""
-    for c in path_str:
-        if c == '0':
-            rot += '1'
-        if c == '1':
-            rot += '2'
-        if c == '2':
-            rot += '3'
-        if c == '3':
-            rot += '4'
-        if c == '4':
-            rot += '5'
-        if c == '5':
-            rot += '0'
-
-    return rotate(rot, count - 1)
-
-def hexagonal_madness(window):
-    layers = 15
+def hexagonal_madness(window, origin, layers=7, inverse=False, rots=0):
     all_tiles = []
     for li in range(layers):
-        all_tiles.extend(tile_layer(li, cf(li, layers)))
+        all_tiles.extend(tile_layer(origin, li, color_function(li, layers), rots, inverse))
 
     lines = []
 
@@ -173,15 +135,15 @@ def hexagonal_madness(window):
         n = int(hexagonal_inverse(t.index))
         long_path = long_path_to(t.index)
         t.path_index = reduce(long_path)
-        t.color = cf(n, layers)
-        lines.extend(get_path_between("", t.path_index, all_tiles))
+        t.color = color_function(n, layers)
+        # lines.extend(get_path_between("", t.path_index, all_tiles))
 
-    for line in lines:
-        line.setFill(color_rgb(100, 100, 100))
-        line.setWidth(3)
+    # for line in lines:
+    #     line.setFill(color_rgb(100, 100, 100))
+    #     line.setWidth(3)
         # line.draw(window)
 
-    path_seeds = ["001122", "0011005544",  "0011005544", "00110011222233", "001100110055554444", "0011001100112222223333", "00110011001100555555444444"]
+    path_seeds = ["05443332222"]
     paths = []
 
     for path_seed in path_seeds:
@@ -189,8 +151,9 @@ def hexagonal_madness(window):
             rotated_path = rotate(path_seed, rotations)
             for target in range(0, len(rotated_path)):
                 infection_color = "nothing"
-                if rotations % 2 == 0: infection_color = color_rgb(30, 45, 60)
-                p = get_line(reduce(rotated_path[:target]), reduce(rotated_path[:target + 1]), all_tiles, infection_color)
+                # if rotations % 2 == 0: infection_color = color_rgb(30, 45, 60)
+                p = get_line(reduce(rotated_path[:target]), reduce(rotated_path[:target + 1]), all_tiles,
+                             infection_color)
                 p.setFill(color_rgb(0, 0, 0))
                 p.setWidth(7)
                 paths.append(p)
@@ -198,12 +161,9 @@ def hexagonal_madness(window):
     for path in paths:
         path.draw(window)
 
-    # for i in range(1, 7):
-    #     all_tiles[i].color = all_tiles[6].color
-
-    all_tiles[0].color = color_rgb(250, 245, 255)
+    # all_tiles[0].color = color_rgb(250, 245, 255)
 
     for t in all_tiles:
         if t.visited:
-            t.get_tile(6, tile_radius).draw(window)
-            # t.get_label().draw(window)
+            t.get_tile(layers, inverse, 6, tile_radius).draw(window)
+            t.get_label(layers, inverse).draw(window)
