@@ -3,7 +3,7 @@ from src.setup import *
 from src.graphics import *
 from src.tools.line import rotate
 
-def draw_wheel(position, number_of_spokes, radius, color):
+def draw_wheel(position, number_of_spokes, radius, color="black"):
     # Draw the circle and the initial line
     c = Circle(position, radius)
     c.setWidth(3)

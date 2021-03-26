@@ -143,7 +143,7 @@ def hexagonal_madness(window, origin, layers=7, inverse=False, rots=0):
     #     line.setWidth(3)
         # line.draw(window)
 
-    path_seeds = ["05443332222"]
+    path_seeds = ["00011"]
     paths = []
 
     for path_seed in path_seeds:
@@ -166,4 +166,4 @@ def hexagonal_madness(window, origin, layers=7, inverse=False, rots=0):
     for t in all_tiles:
         if t.visited:
             t.get_tile(layers, inverse, 6, tile_radius).draw(window)
-            t.get_label(layers, inverse).draw(window)
+            # t.get_label(layers, inverse).draw(window)
